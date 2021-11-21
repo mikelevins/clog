@@ -163,10 +163,8 @@ the default answer. (Private)"
 	       (setf (gethash id *connection-data*) (make-hash-table :test #'equal))
 	       (setf (gethash "connection-id" (get-connection-data id)) id))
 	     (format t "New connection id - ~A - ~A~%" id connection)
-             #+allegro
-	     (format t "TODO: send clog connection id to the connection")
-             #-allegro
-	     (websocket-driver:send connection (format nil "clog['connection_id']=~A" id))
+	     (websocket-driver:send connection
+				  (format nil "clog['connection_id']=~A" id))
 	     (bordeaux-threads:make-thread
 	      (lambda ()
 		(funcall *on-connect-handler* id))
@@ -238,44 +236,28 @@ the default answer. (Private)"
 
 (defun clog-server (env)
   (handler-case
-      (let ((ws
-              #+allegro
-              nil ; TODO: create a websocket server using allegro's webocket support
-              #-allegro
-              (websocket-driver:make-server env)))
-        #+allegro
-        (format t "~%TODO: create websocket new-connection handler")
-        #-allegro
+      (let ((ws (websocket-driver:make-server env)))
 	(websocket-driver:on :open ws
                              (lambda ()
-			       (let* ((query (getf env :query-string))
-				      (items (when query
-					       (quri:url-decode-params query)))
-				      (id    (when items
-					       (cdr (assoc "r" items
-						           :test #'equalp)))))
-			         (when (typep id 'string)
-			           (setf id (parse-integer id :junk-allowed t)))
-			         (handle-new-connection ws id))))
+			   (let* ((query (getf env :query-string))
+				  (items (when query
+					   (quri:url-decode-params query)))
+				  (id    (when items
+					   (cdr (assoc "r" items
+						       :test #'equalp)))))
+			     (when (typep id 'string)
+			       (setf id (parse-integer id :junk-allowed t)))
+			     (handle-new-connection ws id))))
 	
-        #+allegro
-        (format t "~%TODO: create websocket message handler")
-        #-allegro
 	(websocket-driver:on :message ws
                              (lambda (msg) (handle-message ws msg)))
 	
-        #+allegro
-        (format t "~%TODO: create websocket close handler")
-        #-allegro
 	(websocket-driver:on :close ws
                              (lambda (&key code reason)
                                (declare (ignore code reason))
                                (handle-close-connection ws)))
 	(lambda (responder)
 	  (declare (ignore responder))
-          #+allegro
-          (format t "~%TODO: create command to start the websocket connection")
-          #-allegro 
 	  (websocket-driver:start-connection ws)))
     (t (c)
       (format t "Condition caught in clog-server - ~A.~&" c)
@@ -286,17 +268,6 @@ the default answer. (Private)"
 ;; initialize ;;
 ;;;;;;;;;;;;;;;;
 
-#+allegro
-(defun initialize (on-connect-handler
-		   &key
-		     (host             "0.0.0.0")
-		     (port             8080)
-		     (boot-file        "/boot.html")
-		     (static-boot-js   nil)
-		     (static-root      #P"./static-files/"))
-  (format t "~%TODO: initialize clog on a socket"))
-
-#-allegro
 (defun initialize (on-connect-handler
 		   &key
 		     (host             "0.0.0.0")
@@ -358,10 +329,6 @@ instead of the compiled version."
 	 ;; Handle Websocket connection
 	 (lambda (env)
 	   (clog-server env))))
-  #+allegro
-  (progn (format t "~%TODO: initialize the aserve handler")
-         (setf *client-handler* nil))
-  #-allegro
   (setf *client-handler* (clack:clackup *app* :address host :port port))
   (format t "HTTP listening on    : ~A:~A~%" host port)
   (format t "HTML Root            : ~A~%"    static-root)
@@ -376,9 +343,6 @@ instead of the compiled version."
 
 (defun shutdown-clog ()
   "Shutdown CLOG."
-  #+allegro
-  (format t "~%TODO: stop the *client-handler*")
-  #-allegro
   (clack:stop *client-handler*)
   (bordeaux-threads:with-lock-held (*connection-lock*)
     (clrhash *connection-data*)
@@ -431,9 +395,6 @@ instead of the compiled version."
   "Execute SCRIPT on CONNECTION-ID, disregard return value."
   (let ((con (get-connection connection-id)))
     (when con
-      #+allegro
-      (format t "~%TODO: send con message to the connection identified by connection-id")
-      #-allegro
       (websocket-driver:send con message))))
 
 ;;;;;;;;;;;
@@ -531,6 +492,7 @@ HTML <br />."
 the browser contents in case of connection loss."
   (execute connection-id (format nil "clog['html_on_close']='~A'"
 				 (escape-string html))))
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; compiled-boot-js ;;
 ;;;;;;;;;;;;;;;;;;;;;;

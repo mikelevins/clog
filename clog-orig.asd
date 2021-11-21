@@ -1,9 +1,6 @@
 
 ;;;; clog.asd
 
-#+allegro (require :aserve)
-#+allegro (require :websocket)
-
 (asdf:defsystem #:clog
   :description "The Common Lisp Omnificent GUI"
 
@@ -12,20 +9,10 @@
   :version "0.9.0"
   :serial t
   :pathname "source/"
-  :depends-on (#-allegro #:clack
-               #-allegro #:websocket-driver
-               #-allegro #:lack-middleware-static
-               #-allegro #:hunchentoot
-               #:alexandria
-               #:cl-ppcre
-	       #:bordeaux-threads
-               #:trivial-open-browser
-               #:parse-float
-	       #:3BMD
-               #:colorize
-	       #:sqlite
-               #:mgl-pax
-               #:quri)
+  :depends-on (#:clack #:websocket-driver #:alexandria #:hunchentoot #:cl-ppcre
+		       #:bordeaux-threads #:trivial-open-browser #:parse-float
+		       #:3BMD #:colorize
+		       #:sqlite #:lack-middleware-static #:mgl-pax #:quri)
   :components ((:file "clog-connection")
 	       (:file "clog")
 	       (:file "clog-docs")
@@ -51,5 +38,3 @@
   :depends-on (#:clog)
   :pathname "tools/"
   :components ((:file "clog-db-admin")))
-
-#+nil (asdf:load-system :clog)
